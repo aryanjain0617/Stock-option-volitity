@@ -294,11 +294,12 @@
         const API_BASE_URL = "https://stock-option-volitity-1.onrender.com";
 
         let stocks = JSON.parse(localStorage.getItem('finalManualCashData_v4')) || [
-            { name: "RELIANCE", atr: 0, opening: 0, oldAtr: 0, oldOpening: 0 }
+            { name: "RELIANCE.NS", atr: 0, opening: 0, oldAtr: 0, oldOpening: 0 }
         ];
 
         async function fetchAllPrices() {
             const btn = document.getElementById('fetchAllBtn');
+            const originalText = btn.innerText;
             btn.innerText = "Processing...";
             btn.disabled = true;
 
@@ -308,13 +309,14 @@
 
             renderAdmin();
             saveAll(true);
-            btn.innerText = "⚡ Fetch All Prices";
+            btn.innerText = originalText;
             btn.disabled = false;
             alert("All prices updated successfully!");
         }
 
         async function fetchOpeningPrice(idx, isBulk = false) {
-            const stockName = stocks[idx].name;
+            // 1. CLEAN THE NAME: Remove spaces and force uppercase
+            let stockName = stocks[idx].name.trim().toUpperCase();
             const btn = document.getElementById(`btn-fetch-${idx}`);
 
             if (btn) {
@@ -323,7 +325,8 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/get-prices?symbol=${stockName}`);
+                // 2. ENCODE URL: Handles dots and special characters
+                const response = await fetch(`${API_BASE_URL}/get-prices?symbol=${encodeURIComponent(stockName)}`);
                 const data = await response.json();
 
                 if (data.openingPrice && data.atr) {
@@ -334,12 +337,18 @@
                         renderAdmin();
                         saveAll(true);
                     }
-                } else if (!isBulk) {
-                    alert(`Data not found for ${stockName}`);
+                } else {
+                    // 3. AUTO-RETRY LOGIC: If "RELIANCE" fails, try "RELIANCE.NS"
+                    if (!stockName.includes('.') && !isBulk) {
+                        console.log("Retrying with .NS suffix...");
+                        stocks[idx].name = stockName + ".NS";
+                        return fetchOpeningPrice(idx, isBulk);
+                    }
+                    if (!isBulk) alert(`Data not found for ${stockName}. Try adding .NS or .BO`);
                 }
             } catch (err) {
-                console.error(err);
-                if (!isBulk) alert("Error connecting to the Live Server!");
+                console.error("Fetch Error:", err);
+                if (!isBulk) alert("Connection Error! Is the Render server awake?");
             } finally {
                 if (btn) {
                     btn.innerText = "GET PRICE";
@@ -408,10 +417,10 @@
             tBody.innerHTML = ""; yBody.innerHTML = "";
 
             stocks.forEach((s, i) => {
-                const a = Number(s.atr);
-                const p = Number(s.opening);
-                const oa = Number(s.oldAtr);
-                const op = Number(s.oldOpening);
+                const a = Number(s.atr) || 0;
+                const p = Number(s.opening) || 0;
+                const oa = Number(s.oldAtr) || 0;
+                const op = Number(s.oldOpening) || 0;
 
                 tBody.innerHTML += `<tr>
                     <td>${i + 1}</td><td><strong>${s.name}</strong></td>
@@ -432,7 +441,7 @@
             stocks.forEach((s, i) => {
                 aBody.innerHTML += `<tr>
                     <td>${i + 1}</td>
-                    <td contenteditable="true" class="editable" onblur="stocks[${i}].name=this.innerText">${s.name}</td>
+                    <td contenteditable="true" class="editable" onblur="stocks[${i}].name=this.innerText.trim().toUpperCase()">${s.name}</td>
                     <td contenteditable="true" class="editable" onblur="stocks[${i}].atr=parseFloat(this.innerText) || 0">${s.atr}</td>
                     <td contenteditable="true" class="editable" onblur="stocks[${i}].opening=parseFloat(this.innerText) || 0">${s.opening}</td>
                     <td class="read-only">${s.oldAtr}</td>
