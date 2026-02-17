@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Dashboard - Pro Trader Edition</title>
+    <style>
+        :root {
+            --red: #ff3b3b;
+            --yellow: #ffd900;
+            --green: #2ecc71;
+            --dark: #1a1a1a;
+            --light: #f4f7f6;
+            --blue: #007bff;
+            --purple: #8e44ad;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: var(--light);
+            margin: 10px;
+            font-size: 13px;
+        }
+
+        .main-title {
+            text-align: center;
+            color: var(--dark);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .top-nav {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .auto-date-screener {
+            background: #000;
+            color: #ffd900;
+            padding: 8px 18px;
+            font-weight: bold;
+            border: 1px solid #ffd900;
+            border-radius: 4px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 5px;
+            margin-left: 20px;
+        }
+
+        .search-input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        .btn-search {
+            background: var(--dark);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .btn-refresh {
+            background: var(--dark);
+        }
+
+        .btn-blue {
+            background: var(--blue);
+        }
+
+        .btn-purple {
+            background: var(--purple);
+        }
+
+        .btn-green {
+            background: var(--green);
+        }
+
+        .btn-red {
+            background: #e74c3c;
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        .btn-gold {
+            background: #d4af37;
+            color: black;
+        }
+
+        .view-container {
+            display: none;
+        }
+
+        .view-active {
+            display: block;
+        }
+
+        .dashboard-wrapper {
+            display: flex;
+            background: white;
+            border: 2px solid var(--dark);
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            text-align: center;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #bbb;
+            padding: 8px;
+            min-width: 85px;
+        }
+
+        .header-row th {
+            background: var(--dark);
+            color: white;
+        }
+
+        .p97 {
+            background: var(--red);
+            color: white;
+            font-weight: bold;
+        }
+
+        .p95 {
+            background: var(--yellow);
+            color: black;
+            font-weight: bold;
+        }
+
+        .p68 {
+            background: var(--green);
+            color: white;
+            font-weight: bold;
+        }
+
+        .divider {
+            width: 12px;
+            background: var(--dark);
+        }
+
+        .editable {
+            background: #fffde7;
+            border: 1px dashed var(--blue);
+            cursor: text;
+            outline: none;
+        }
+
+        .read-only {
+            background: #f1f1f1;
+            color: #777;
+            font-weight: bold;
+            cursor: not-allowed;
+        }
+
+        .panel-card {
+            max-width: 1050px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border: 2px solid var(--purple);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-nav">
+        <div style="display:flex; align-items:center;">
+            <div class="auto-date-screener">DATE: <span id="displayDate">--</span></div>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Enter Script Name...">
+                <button class="btn-search" onclick="executeSearch()">SEARCH</button>
+            </div>
+        </div>
+
+        <div id="dashboardNav" class="btn-group">
+            <button class="nav-btn btn-purple" onclick="showView('admin')">Go to Control Panel</button>
+        </div>
+
+        <div id="adminNav" class="btn-group" style="display:none;">
+            <button id="fetchAllBtn" class="nav-btn btn-gold" onclick="fetchAllPrices()">⚡ Fetch All Prices</button>
+            <button class="nav-btn btn-refresh" onclick="handleRefresh()">Shift Data</button>
+            <button class="nav-btn btn-blue" onclick="showView('main')">Return to Dashboard</button>
+            <button class="nav-btn btn-green" onclick="saveAll()">Save All Data</button>
+        </div>
+    </div>
+
+    <div id="mainView" class="view-container view-active">
+        <h1 class="main-title">Main Cash Dashboard</h1>
+        <div class="dashboard-wrapper">
+            <div>
+                <div
+                    style="background:#eee; padding:6px; font-weight:bold; text-align:center; border-bottom: 1px solid #000;">
+                    TODAY RANGE</div>
+                <table>
+                    <thead>
+                        <tr class="header-row">
+                            <th>S.No</th>
+                            <th>Script</th>
+                            <th class="p97">97%</th>
+                            <th class="p95">95%</th>
+                            <th class="p68">68%</th>
+                            <th class="p68">68%</th>
+                            <th class="p95">95%</th>
+                            <th class="p97">97%</th>
+                        </tr>
+                    </thead>
+                    <tbody id="todayBody"></tbody>
+                </table>
+            </div>
+            <div class="divider"></div>
+            <div>
+                <div
+                    style="background:#eee; padding:6px; font-weight:bold; text-align:center; border-bottom: 1px solid #000;">
+                    YESTERDAY RANGE</div>
+                <table>
+                    <thead>
+                        <tr class="header-row">
+                            <th class="p97">97%</th>
+                            <th class="p95">95%</th>
+                            <th class="p68">68%</th>
+                            <th class="p68">68%</th>
+                            <th class="p95">95%</th>
+                            <th class="p97">97%</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yesterdayBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminView" class="view-container">
+        <div class="panel-card">
+            <h3 style="margin-top:0; color:var(--purple); text-transform: uppercase;">Control Panel: Data Entry</h3>
+            <table style="width:100%">
+                <thead>
+                    <tr class="header-row" style="background:var(--purple)">
+                        <th>S.No</th>
+                        <th>Script Name (Edit)</th>
+                        <th>Today ATR (Edit)</th>
+                        <th>Today Opening (Edit)</th>
+                        <th>Old ATR</th>
+                        <th>Old Opening</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="adminBody"></tbody>
+            </table>
+            <div style="margin-top:15px;">
+                <button class="nav-btn btn-blue" onclick="addNewScript()">+ Add New Script</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let stocks = JSON.parse(localStorage.getItem('finalManualCashData_v4')) || [
+            { name: "RELIANCE", atr: 0, opening: 0, oldAtr: 0, oldOpening: 0 }
+        ];
+
+        // --- FETCH ALL FUNCTION ---
+        async function fetchAllPrices() {
+            const btn = document.getElementById('fetchAllBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            for (let i = 0; i < stocks.length; i++) {
+                try {
+                    // Update the individual button for visual feedback
+                    const individualBtn = document.getElementById(`btn-fetch-${i}`);
+                    if (individualBtn) individualBtn.innerText = "WAIT...";
+
+                    const response = await fetch(`http://localhost:3000/get-prices?symbol=${stocks[i].name}`);
+                    const data = await response.json();
+
+                    if (data.openingPrice) {
+                        stocks[i].opening = data.openingPrice;
+                    }
+                } catch (err) {
+                    console.error(`Failed to fetch for ${stocks[i].name}`);
+                }
+            }
+
+            renderAdmin();
+            saveAll(true);
+            btn.innerText = originalText;
+            btn.disabled = false;
+            alert("All prices updated successfully!");
+        }
+
+        async function fetchOpeningPrice(idx) {
+            const stockName = stocks[idx].name;
+            const btn = document.getElementById(`btn-fetch-${idx}`);
+            btn.innerText = "WAIT...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`http://localhost:3000/get-prices?symbol=${stockName}`);
+                const data = await response.json();
+
+                if (data.openingPrice) {
+                    stocks[idx].opening = data.openingPrice;
+                    renderAdmin();
+                    saveAll(true);
+                } else {
+                    alert("Price not found.");
+                }
+            } catch (err) {
+                alert("Make sure Node server.js is running!");
+            } finally {
+                if (btn) {
+                    btn.innerText = "GET PRICE";
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        function executeSearch() {
+            const filter = document.getElementById('searchInput').value.toUpperCase();
+            const tBody = document.getElementById('todayBody');
+            const aBody = document.getElementById('adminBody');
+
+            const filterRows = (tbodyElement, cellIdx) => {
+                const rows = tbodyElement.getElementsByTagName('tr');
+                for (let i = 0; i < rows.length; i++) {
+                    const cell = rows[i].getElementsByTagName('td')[cellIdx];
+                    if (cell) {
+                        const textValue = cell.textContent || cell.innerText;
+                        rows[i].style.display = textValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                    }
+                }
+            };
+
+            filterRows(tBody, 1);
+            filterRows(aBody, 1);
+
+            const yBody = document.getElementById('yesterdayBody');
+            const tRows = tBody.getElementsByTagName('tr');
+            const yRows = yBody.getElementsByTagName('tr');
+            for (let i = 0; i < tRows.length; i++) {
+                if (yRows[i]) yRows[i].style.display = tRows[i].style.display;
+            }
+        }
+
+        function handleRefresh() {
+            if (confirm("Shift Data? Today moves to Yesterday, Today clears.")) {
+                stocks.forEach(s => {
+                    s.oldAtr = s.atr;
+                    s.oldOpening = s.opening;
+                    s.atr = 0;
+                    s.opening = 0;
+                });
+                saveAll(true);
+                renderAdmin();
+            }
+        }
+
+        function showView(v) {
+            document.querySelectorAll('.view-container').forEach(el => el.classList.remove('view-active'));
+            document.getElementById(v + 'View').classList.add('view-active');
+            if (v === 'admin') {
+                document.getElementById('dashboardNav').style.display = 'none';
+                document.getElementById('adminNav').style.display = 'flex';
+                renderAdmin();
+            } else {
+                document.getElementById('dashboardNav').style.display = 'flex';
+                document.getElementById('adminNav').style.display = 'none';
+                renderDashboard();
+            }
+        }
+
+        function renderDashboard() {
+            const tBody = document.getElementById('todayBody');
+            const yBody = document.getElementById('yesterdayBody');
+            tBody.innerHTML = ""; yBody.innerHTML = "";
+
+            stocks.forEach((s, i) => {
+                const a = Number(s.atr);
+                const p = Number(s.opening);
+                const oa = Number(s.oldAtr);
+                const op = Number(s.oldOpening);
+
+                tBody.innerHTML += `<tr>
+                    <td>${i + 1}</td><td><strong>${s.name}</strong></td>
+                    <td class="p97">${(p - 3 * a).toFixed(2)}</td><td class="p95">${(p - 2 * a).toFixed(2)}</td><td class="p68">${(p - a).toFixed(2)}</td>
+                    <td class="p68">${(p + a).toFixed(2)}</td><td class="p95">${(p + 2 * a).toFixed(2)}</td><td class="p97">${(p + 3 * a).toFixed(2)}</td>
+                </tr>`;
+
+                yBody.innerHTML += `<tr>
+                    <td class="p97">${(op - 3 * oa).toFixed(2)}</td><td class="p95">${(op - 2 * oa).toFixed(2)}</td><td class="p68">${(op - oa).toFixed(2)}</td>
+                    <td class="p68">${(op + oa).toFixed(2)}</td><td class="p95">${(op + 2 * oa).toFixed(2)}</td><td class="p97">${(op + 3 * oa).toFixed(2)}</td>
+                </tr>`;
+            });
+        }
+
+        function renderAdmin() {
+            const aBody = document.getElementById('adminBody');
+            aBody.innerHTML = "";
+            stocks.forEach((s, i) => {
+                aBody.innerHTML += `<tr>
+                    <td>${i + 1}</td>
+                    <td contenteditable="true" class="editable" onblur="stocks[${i}].name=this.innerText">${s.name}</td>
+                    <td contenteditable="true" class="editable" onblur="stocks[${i}].atr=parseFloat(this.innerText) || 0">${s.atr}</td>
+                    <td contenteditable="true" class="editable" onblur="stocks[${i}].opening=parseFloat(this.innerText) || 0">${s.opening}</td>
+                    <td class="read-only">${s.oldAtr}</td>
+                    <td class="read-only">${s.oldOpening}</td>
+                    <td>
+                        <button id="btn-fetch-${i}" class="nav-btn btn-blue" onclick="fetchOpeningPrice(${i})">Get Price</button>
+                        <button class="nav-btn btn-red" onclick="deleteScript(${i})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function deleteScript(idx) {
+            if (confirm("Delete script?")) {
+                stocks.splice(idx, 1);
+                saveAll(true);
+                renderAdmin();
+            }
+        }
+
+        function saveAll(silent = false) {
+            localStorage.setItem('finalManualCashData_v4', JSON.stringify(stocks));
+            renderDashboard();
+            if (!silent) alert("Data Saved.");
+        }
+
+        function addNewScript() {
+            stocks.push({ name: "NEW", atr: 0, opening: 0, oldAtr: 0, oldOpening: 0 });
+            renderAdmin();
+        }
+
+        window.onload = () => {
+            const now = new Date();
+            document.getElementById('displayDate').innerText = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+            renderDashboard();
+        };
+    </script>
+</body>
+
+</html>
