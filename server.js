@@ -1,16 +1,23 @@
 const express = require('express');
 const YahooFinance = require('yahoo-finance2').default;
 const cors = require('cors');
+const path = require('path'); // Added for file handling
 
 const app = express();
 
-// Fix: In v3, options are passed directly into the constructor
+// Configuration for Yahoo Finance
 const yahooFinance = new YahooFinance({
     queue: { concurrency: 1 },
     validation: { logErrors: true }
 });
 
 app.use(cors());
+
+// --- NEW HOME ROUTE ---
+// This tells Render to show your index.html when you open the main link
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 app.get('/get-prices', async (req, res) => {
     let symbol = req.query.symbol ? req.query.symbol.trim().toUpperCase() : "";
@@ -26,7 +33,7 @@ app.get('/get-prices', async (req, res) => {
             // 1. Get Current Quote
             const quote = await yahooFinance.quote(querySymbol);
 
-            // 2. Get History for ATR (using the 'chart' module)
+            // 2. Get History for ATR
             const end = new Date();
             const start = new Date();
             start.setDate(start.getDate() - 40);
@@ -75,4 +82,6 @@ app.get('/get-prices', async (req, res) => {
     res.status(500).json({ error: "Could not fetch ATR/Price." });
 });
 
-app.listen(3000, () => console.log('Fixed ATR Server (v3) running on http://localhost:3000'));
+// --- UPDATED PORT FOR RENDER ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server Live on Port ${PORT}`));
