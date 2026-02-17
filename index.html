@@ -291,7 +291,6 @@
     </div>
 
     <script>
-        // CHANGE THIS URL TO YOUR RENDER URL
         const API_BASE_URL = "https://stock-option-volitity-1.onrender.com";
 
         let stocks = JSON.parse(localStorage.getItem('finalManualCashData_v4')) || [
@@ -300,17 +299,16 @@
 
         async function fetchAllPrices() {
             const btn = document.getElementById('fetchAllBtn');
-            const originalText = btn.innerText;
             btn.innerText = "Processing...";
             btn.disabled = true;
 
             for (let i = 0; i < stocks.length; i++) {
-                await fetchOpeningPrice(i, true); // Use the helper function
+                await fetchOpeningPrice(i, true);
             }
 
             renderAdmin();
             saveAll(true);
-            btn.innerText = originalText;
+            btn.innerText = "⚡ Fetch All Prices";
             btn.disabled = false;
             alert("All prices updated successfully!");
         }
@@ -325,7 +323,6 @@
             }
 
             try {
-                // TALKING TO RENDER INSTEAD OF LOCALHOST
                 const response = await fetch(`${API_BASE_URL}/get-prices?symbol=${stockName}`);
                 const data = await response.json();
 
